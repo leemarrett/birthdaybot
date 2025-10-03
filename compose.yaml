@@ -11,6 +11,7 @@ services:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - SLACK_USER_TOKEN=${SLACK_USER_TOKEN}
       - NODE_ENV=production
     volumes:
       # Mount config directory for editable configuration
