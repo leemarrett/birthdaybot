@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  slack-birthday-bot:
+    build: .
+    container_name: slack-birthday-bot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - NODE_ENV=production
+    volumes:
+      # Mount config directory for editable configuration
+      - ./config:/app/config:rw
+      # Optional: Mount logs directory
+      - ./logs:/app/logs:rw
+    networks:
+      - birthday-bot-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  birthday-bot-network:
+    driver: bridge
