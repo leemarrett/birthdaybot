@@ -44,6 +44,8 @@ class BirthdayHandler {
 
     // Randomly select a template
     const randomIndex = Math.floor(Math.random() * templates.length);
+    console.log(`Random index: ${randomIndex}, Total messages: ${templates.length}`);
+    console.log(`Selected message: ${templates[randomIndex]}`);
     return templates[randomIndex];
   }
 
