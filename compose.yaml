@@ -7,11 +7,13 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+      - "3001:3001"
     environment:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
       - SLACK_USER_TOKEN=${SLACK_USER_TOKEN}
+      - SLACK_COMMAND_NAME=${SLACK_COMMAND_NAME}
       - NODE_ENV=production
     volumes:
       # Mount config directory for editable configuration
