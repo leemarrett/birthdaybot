@@ -40,14 +40,14 @@ app.command(HELP_COMMAND_NAME, async ({ ack, respond }) => {
     text: `🎉 **Birthday Boi Help** 🎉
 
 **Usage:**
-\`${COMMAND_NAME} @username1\` - Single birthday
-\`${COMMAND_NAME} @user1, @user2\` - Multiple birthdays
-\`${COMMAND_NAME} --test @username\` - Test mode (posts to current channel)
+\`${COMMAND_NAME} @username1\` - Single birthday (posts to current channel)
+\`${COMMAND_NAME} @user1, @user2\` - Multiple birthdays (posts to current channel)
+\`${COMMAND_NAME} --test @username\` - Test mode (same as above, but with test indicator)
 
-**Test Mode:**
-- Use \`--test\` or \`-t\` to test in private channels
-- Perfect for trying out message templates and reactions
-- Posts to current channel instead of #announcements
+**Default Behavior:**
+- Posts to the channel where you run the command
+- No more annoying notifications in #announcements!
+- Set SLACK_TARGET_CHANNEL in .env to override this behavior
 
 **Configuration:**
 - Edit \`config/messages.json\` for message templates

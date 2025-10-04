@@ -153,17 +153,23 @@ class BirthdayHandler {
       if (isTestMode) {
         targetChannel = command.channel_id;
       } else {
-        // Get target channel from environment variable or default to #announcements
-        const targetChannelName = process.env.SLACK_TARGET_CHANNEL || "#announcements";
-        const channelId = await this.resolveChannelId(client, targetChannelName);
-        if (!channelId) {
-          await respond({
-            text: `❌ Error: Could not find the ${targetChannelName} channel. Please check that the channel exists and the bot has access to it.`,
-            response_type: "ephemeral"
-          });
-          return;
+        // Check if a specific target channel is configured
+        const targetChannelName = process.env.SLACK_TARGET_CHANNEL;
+        if (targetChannelName) {
+          // Use configured target channel
+          const channelId = await this.resolveChannelId(client, targetChannelName);
+          if (!channelId) {
+            await respond({
+              text: `❌ Error: Could not find the ${targetChannelName} channel. Please check that the channel exists and the bot has access to it.`,
+              response_type: "ephemeral"
+            });
+            return;
+          }
+          targetChannel = channelId;
+        } else {
+          // Default behavior: post to current channel (like test mode)
+          targetChannel = command.channel_id;
         }
-        targetChannel = channelId;
       }
 
       // Add test mode indicator to message
