@@ -155,6 +155,7 @@ class BirthdayHandler {
       } else {
         // Check if a specific target channel is configured
         const targetChannelName = process.env.SLACK_TARGET_CHANNEL;
+        
         if (targetChannelName) {
           // Use configured target channel
           const channelId = await this.resolveChannelId(client, targetChannelName);
