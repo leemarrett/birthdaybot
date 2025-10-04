@@ -96,6 +96,33 @@ class BirthdayHandler {
     return { isTestMode, usernames };
   }
 
+  // Resolve channel name to channel ID
+  async resolveChannelId(client, channelName) {
+    try {
+      // Remove # prefix if present
+      const cleanChannelName = channelName.startsWith('#') ? channelName.substring(1) : channelName;
+      
+      // Try to get channel info by name
+      const result = await client.conversations.list({
+        types: 'public_channel,private_channel'
+      });
+      
+      if (result.ok && result.channels) {
+        const channel = result.channels.find(ch => ch.name === cleanChannelName);
+        if (channel) {
+          console.log(`Found channel ${cleanChannelName} with ID: ${channel.id}`);
+          return channel.id;
+        }
+      }
+      
+      console.error(`Channel ${cleanChannelName} not found`);
+      return null;
+    } catch (error) {
+      console.error(`Error resolving channel ${channelName}:`, error);
+      return null;
+    }
+  }
+
   // Main handler for birthday command
   async handleBirthdayCommand(ack, respond, command, client) {
     try {
@@ -122,7 +149,22 @@ class BirthdayHandler {
       console.log(`Generated reactions: ${JSON.stringify(reactions)}`);
 
       // Determine target channel
-      const targetChannel = isTestMode ? command.channel_id : "#announcements";
+      let targetChannel;
+      if (isTestMode) {
+        targetChannel = command.channel_id;
+      } else {
+        // Get target channel from environment variable or default to #announcements
+        const targetChannelName = process.env.SLACK_TARGET_CHANNEL || "#announcements";
+        const channelId = await this.resolveChannelId(client, targetChannelName);
+        if (!channelId) {
+          await respond({
+            text: `❌ Error: Could not find the ${targetChannelName} channel. Please check that the channel exists and the bot has access to it.`,
+            response_type: "ephemeral"
+          });
+          return;
+        }
+        targetChannel = channelId;
+      }
 
       // Add test mode indicator to message
       const finalMessage = isTestMode 
@@ -171,6 +213,10 @@ class BirthdayHandler {
               console.log(`Successfully added reaction: ${reactions[i]}`);
             } catch (error) {
               console.error(`Error adding reaction ${reactions[i]}:`, error);
+              // Check if it's a channel not found error
+              if (error.data && error.data.error === 'channel_not_found') {
+                console.error(`Channel ${targetChannel} not found for reactions. This might be a permissions issue.`);
+              }
             }
           }, i * 500); // 500ms delay between reactions
         }
