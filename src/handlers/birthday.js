@@ -129,7 +129,7 @@ class BirthdayHandler {
       // Acknowledge the command
       await ack();
       
-      console.log('🎉 BIRTHDAY BOT: Updated code is running! Version with current channel fix.');
+      console.log('🎉🎉🎉 BIRTHDAY BOT: UPDATED CODE IS RUNNING! VERSION WITH CURRENT CHANNEL FIX! 🎉🎉🎉');
 
       // Parse command for test mode and usernames
       const { isTestMode, usernames } = this.parseCommand(command.text);
