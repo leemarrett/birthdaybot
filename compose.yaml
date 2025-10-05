@@ -14,7 +14,7 @@ services:
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
       - SLACK_USER_TOKEN=${SLACK_USER_TOKEN}
       - SLACK_COMMAND_NAME=${SLACK_COMMAND_NAME}
-      - SLACK_TARGET_CHANNEL=${SLACK_TARGET_CHANNEL}
+      # SLACK_TARGET_CHANNEL removed - bot will use current channel by default
       - NODE_ENV=production
     volumes:
       # Mount config directory for editable configuration
