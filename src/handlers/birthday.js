@@ -136,7 +136,7 @@ class BirthdayHandler {
       
       if (usernames.length === 0) {
         await respond({
-          text: "Please provide at least one username to celebrate! Usage: `/birthdaybot @username1, @username2`\n\nAdd `--test` or `-t` to test in this channel instead of #announcements.",
+          text: "🚀 UPDATED BOT VERSION - Please provide at least one username to celebrate! Usage: `/birthdaybot @username1, @username2`\n\nAdd `--test` or `-t` to test in this channel instead of #announcements.",
           response_type: "ephemeral"
         });
         return;
