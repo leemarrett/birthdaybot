@@ -207,15 +207,25 @@ class BirthdayHandler {
       // Add reactions to the message
       if (result && result.ts) {
         const messageTs = result.ts;
+        const resultChannel = result.channel;
         console.log(`Adding ${reactions.length} reactions to message ${messageTs} in channel ${targetChannel}`);
+        console.log(`DEBUG: targetChannel type: ${typeof targetChannel}, value: ${targetChannel}`);
+        console.log(`DEBUG: resultChannel type: ${typeof resultChannel}, value: ${resultChannel}`);
+        console.log(`DEBUG: messageTs type: ${typeof messageTs}, value: ${messageTs}`);
+        console.log(`DEBUG: result object:`, JSON.stringify(result, null, 2));
+        
+        // Use the channel ID from the result object if available, otherwise fall back to targetChannel
+        const reactionChannel = resultChannel || targetChannel;
+        console.log(`DEBUG: Using channel ${reactionChannel} for reactions`);
         
         // Add reactions with a small delay to avoid rate limiting
         for (let i = 0; i < reactions.length; i++) {
           setTimeout(async () => {
             try {
               console.log(`Adding reaction: ${reactions[i]}`);
+              console.log(`DEBUG: Using channel ${reactionChannel} and timestamp ${messageTs} for reaction ${reactions[i]}`);
               await client.reactions.add({
-                channel: targetChannel,
+                channel: reactionChannel,
                 timestamp: messageTs,
                 name: reactions[i]
               });
@@ -224,7 +234,34 @@ class BirthdayHandler {
               console.error(`Error adding reaction ${reactions[i]}:`, error);
               // Check if it's a channel not found error
               if (error.data && error.data.error === 'channel_not_found') {
-                console.error(`Channel ${targetChannel} not found for reactions. This might be a permissions issue.`);
+                console.error(`Channel ${reactionChannel} not found for reactions. This might be a permissions issue.`);
+                console.error(`DEBUG: Full error data:`, JSON.stringify(error.data, null, 2));
+                console.error(`DEBUG: Tried channel: ${reactionChannel}, original targetChannel: ${targetChannel}, resultChannel: ${resultChannel}`);
+                
+                // Try to join the channel if it's a private channel
+                if (reactionChannel.startsWith('C') || reactionChannel.startsWith('G')) {
+                  try {
+                    console.log(`Attempting to join channel ${reactionChannel}...`);
+                    await client.conversations.join({ channel: reactionChannel });
+                    console.log(`Successfully joined channel ${reactionChannel}`);
+                    
+                    // Retry the reaction after joining
+                    setTimeout(async () => {
+                      try {
+                        await client.reactions.add({
+                          channel: reactionChannel,
+                          timestamp: messageTs,
+                          name: reactions[i]
+                        });
+                        console.log(`Successfully added reaction ${reactions[i]} after joining channel`);
+                      } catch (retryError) {
+                        console.error(`Still failed to add reaction ${reactions[i]} after joining channel:`, retryError);
+                      }
+                    }, 1000);
+                  } catch (joinError) {
+                    console.error(`Failed to join channel ${reactionChannel}:`, joinError);
+                  }
+                }
               }
             }
           }, i * 500); // 500ms delay between reactions
