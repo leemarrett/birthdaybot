@@ -150,35 +150,26 @@ class BirthdayHandler {
       const reactions = this.getReactions();
       console.log(`Generated reactions: ${JSON.stringify(reactions)}`);
 
-      // Determine target channel
-      let targetChannel;
-      if (isTestMode) {
-        targetChannel = command.channel_id;
-      } else {
-        // Check if a specific target channel is configured
-        const targetChannelName = process.env.SLACK_TARGET_CHANNEL;
-        
-        if (targetChannelName) {
-          // Use configured target channel
-          const channelId = await this.resolveChannelId(client, targetChannelName);
-          if (!channelId) {
-            await respond({
-              text: `❌ Error: Could not find the ${targetChannelName} channel. Please check that the channel exists and the bot has access to it.`,
-              response_type: "ephemeral"
-            });
-            return;
-          }
-          targetChannel = channelId;
-        } else {
-          // Default behavior: post to current channel (like test mode)
-          targetChannel = command.channel_id;
-        }
+      // Determine target channel: ALWAYS #announcements (or SLACK_TARGET_CHANNEL override)
+      const announcementsChannelName = process.env.SLACK_TARGET_CHANNEL || '#announcements';
+      const targetChannel = await this.resolveChannelId(client, announcementsChannelName);
+      if (!targetChannel) {
+        await respond({
+          text: `❌ Error: Could not find the ${announcementsChannelName} channel. Please ensure it exists and the bot has access.`,
+          response_type: "ephemeral"
+        });
+        return;
+      }
+      // Try to ensure the bot is a member of the channel
+      try {
+        await client.conversations.join({ channel: targetChannel });
+      } catch (joinErr) {
+        // Ignore already_in_channel or not_allowed errors; continue to try posting/reactions
+        console.log(`Join attempt for ${announcementsChannelName} (${targetChannel}) result:`, joinErr?.data?.error || 'ok/ignored');
       }
 
-      // Add test mode indicator to message
-      const finalMessage = isTestMode 
-        ? `🧪 **TEST MODE** 🧪\n${message}` 
-        : message;
+      // Always post the final message to announcements
+      const finalMessage = message;
 
       // Get settings from config
       const settings = this.messages.settings || {};
