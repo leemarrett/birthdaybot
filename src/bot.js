@@ -29,8 +29,12 @@ const birthdayHandler = new BirthdayHandler();
 // Register slash command
 app.command(COMMAND_NAME, async ({ ack, respond, command, client }) => {
   // Use user client if available and postAsUser is enabled
+  // But always use bot client for DM operations (it has the right scopes)
   const effectiveClient = userClient || client;
-  await birthdayHandler.handleBirthdayCommand(ack, respond, command, effectiveClient);
+  const botClient = client; // Always use bot client for DM/channel operations
+  console.log(`[DEBUG] Using ${userClient ? 'userClient' : 'bot client'} for posting, bot client for DM/channel ops`);
+  console.log(`[DEBUG] Command received: text="${command.text}", user_id="${command.user_id}"`);
+  await birthdayHandler.handleBirthdayCommand(ack, respond, command, effectiveClient, botClient);
 });
 
 // Help command

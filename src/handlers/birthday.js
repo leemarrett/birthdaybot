@@ -89,9 +89,20 @@ class BirthdayHandler {
 
   // Parse command text for test mode and usernames
   parseCommand(text) {
-    const isTestMode = text.toLowerCase().includes('--test') || text.toLowerCase().includes('-t');
+    // Log the raw command text for debugging
+    console.log(`[DEBUG] Raw command text: "${text}"`);
+    
+    if (!text) {
+      console.log(`[DEBUG] Command text is empty or undefined`);
+      return { isTestMode: false, usernames: [] };
+    }
+    
+    const lowerText = text.toLowerCase();
+    const isTestMode = lowerText.includes('--test') || lowerText.includes('-t') || lowerText.trim().startsWith('--test') || lowerText.trim().startsWith('-t');
     const cleanText = text.replace(/--test|-t/gi, '').trim();
     const usernames = this.parseUsernames(cleanText);
+    
+    console.log(`[DEBUG] isTestMode: ${isTestMode}, usernames: ${JSON.stringify(usernames)}`);
     
     return { isTestMode, usernames };
   }
@@ -124,7 +135,11 @@ class BirthdayHandler {
   }
 
   // Main handler for birthday command
-  async handleBirthdayCommand(ack, respond, command, client) {
+  // client: client to use for posting messages (may be userClient or bot client)
+  // botClient: always the bot client (for DM/channel operations that need bot scopes)
+  async handleBirthdayCommand(ack, respond, command, client, botClient = null) {
+    // If botClient not provided, use client (backwards compatibility)
+    const dmClient = botClient || client;
     try {
       // Acknowledge the command
       await ack();
@@ -151,32 +166,40 @@ class BirthdayHandler {
 
       // Determine target channel: #announcements for normal mode, user DM for test mode
       let targetChannel;
+      console.log(`[DEBUG] isTestMode: ${isTestMode}, user_id: ${command.user_id}`);
+      
       if (isTestMode) {
         // Test mode: post to user's DM
+        // Always use bot client for opening DMs (has im:write scope)
+        console.log(`[DEBUG] Entering test mode - attempting to open DM`);
         try {
-          const dmResult = await client.conversations.open({
+          const dmResult = await dmClient.conversations.open({
             users: command.user_id
           });
+          console.log(`[DEBUG] DM open result:`, JSON.stringify({ ok: dmResult.ok, channel: dmResult.channel?.id, error: dmResult.error }));
+          
           if (!dmResult.ok || !dmResult.channel) {
+            console.error(`[DEBUG] Failed to open DM:`, dmResult.error);
             await respond({
-              text: `❌ Error: Could not open DM with you. Please try again.`,
+              text: `❌ Error: Could not open DM with you. Error: ${dmResult.error || 'unknown'}. Please try again.`,
               response_type: "ephemeral"
             });
             return;
           }
           targetChannel = dmResult.channel.id;
-          console.log(`Test mode: posting to user DM ${targetChannel}`);
+          console.log(`[DEBUG] Test mode: posting to user DM ${targetChannel}`);
         } catch (error) {
-          console.error('Error opening DM:', error);
+          console.error('[DEBUG] Exception opening DM:', error);
           await respond({
-            text: `❌ Error: Could not open DM. Please try again.`,
+            text: `❌ Error: Could not open DM. Exception: ${error.message || error}. Please try again.`,
             response_type: "ephemeral"
           });
           return;
         }
       } else {
         // Normal mode: always post to #announcements
-        targetChannel = await this.resolveChannelId(client, '#announcements');
+        console.log(`[DEBUG] Entering normal mode - posting to #announcements`);
+        targetChannel = await this.resolveChannelId(dmClient, '#announcements');
         if (!targetChannel) {
           await respond({
             text: `❌ Error: Could not find the #announcements channel. Please ensure it exists and the bot has access.`,
@@ -186,10 +209,25 @@ class BirthdayHandler {
         }
         // Try to ensure the bot is a member of the channel
         try {
-          await client.conversations.join({ channel: targetChannel });
+          await dmClient.conversations.join({ channel: targetChannel });
         } catch (joinErr) {
           // Ignore already_in_channel or not_allowed errors; continue to try posting/reactions
           console.log(`Join attempt for #announcements (${targetChannel}) result:`, joinErr?.data?.error || 'ok/ignored');
+        }
+      }
+      
+      console.log(`[DEBUG] Final targetChannel: ${targetChannel}, isTestMode: ${isTestMode}`);
+      
+      // Safety check: Never post to #announcements if in test mode
+      if (isTestMode && targetChannel) {
+        const announcementsId = await this.resolveChannelId(dmClient, '#announcements');
+        if (announcementsId && targetChannel === announcementsId) {
+          console.error(`[DEBUG] ERROR: Test mode detected but targetChannel is #announcements! Aborting.`);
+          await respond({
+            text: `❌ Error: Test mode detected but would post to #announcements. This is a bug. Please report this issue.`,
+            response_type: "ephemeral"
+          });
+          return;
         }
       }
 
