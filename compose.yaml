@@ -19,6 +19,8 @@ services:
     volumes:
       # Mount config directory for editable configuration
       - ./config:/app/config:rw
+      # Mount source code for hot-reloading (no rebuild needed)
+      - ./src:/app/src:ro
       # Optional: Mount logs directory
       - ./logs:/app/logs:rw
     networks:
