@@ -19,12 +19,12 @@ if (process.env.SLACK_USER_TOKEN) {
   userClient = new WebClient(process.env.SLACK_USER_TOKEN);
 }
 
-// Initialize birthday handler
-const birthdayHandler = new BirthdayHandler();
-
 // Get command name from environment or use default
 const COMMAND_NAME = process.env.SLACK_COMMAND_NAME || '/birthdaybot';
 const HELP_COMMAND_NAME = process.env.SLACK_COMMAND_NAME ? `${process.env.SLACK_COMMAND_NAME}-help` : '/birthdaybot-help';
+
+// Initialize birthday handler
+const birthdayHandler = new BirthdayHandler();
 
 // Register slash command
 app.command(COMMAND_NAME, async ({ ack, respond, command, client }) => {
@@ -40,14 +40,13 @@ app.command(HELP_COMMAND_NAME, async ({ ack, respond }) => {
     text: `🎉 **Birthday Boi Help** 🎉
 
 **Usage:**
-\`${COMMAND_NAME} @username1\` - Single birthday (posts to current channel)
-\`${COMMAND_NAME} @user1, @user2\` - Multiple birthdays (posts to current channel)
-\`${COMMAND_NAME} --test @username\` - Test mode (same as above, but with test indicator)
+\`${COMMAND_NAME} @username1\` - Single birthday (posts to #announcements)
+\`${COMMAND_NAME} @user1, @user2\` - Multiple birthdays (posts to #announcements)
+\`${COMMAND_NAME} --test @username\` - Test mode (posts to your DM)
 
-**Default Behavior:**
-- Posts to the channel where you run the command
-- No more annoying notifications in #announcements!
-- Set SLACK_TARGET_CHANNEL in .env to override this behavior
+**Behavior:**
+- Normal mode: Always posts to #announcements
+- Test mode (\`--test\` or \`-t\`): Posts to your DM for testing
 
 **Configuration:**
 - Edit \`config/messages.json\` for message templates

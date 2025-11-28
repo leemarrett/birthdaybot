@@ -129,14 +129,13 @@ class BirthdayHandler {
       // Acknowledge the command
       await ack();
       
-      console.log('🎉🎉🎉 BIRTHDAY BOT: UPDATED CODE IS RUNNING! VERSION WITH CURRENT CHANNEL FIX! 🎉🎉🎉');
 
       // Parse command for test mode and usernames
       const { isTestMode, usernames } = this.parseCommand(command.text);
       
       if (usernames.length === 0) {
         await respond({
-          text: "🚀 UPDATED BOT VERSION - Please provide at least one username to celebrate! Usage: `/birthdaybot @username1, @username2`\n\nAdd `--test` or `-t` to test in this channel instead of #announcements.",
+          text: `🚀 Please provide at least one username to celebrate! Usage: \`/birthdayboi @username1, @username2\`\n\nAdd \`--test\` or \`-t\` to test in your DM instead of posting to #announcements.`,
           response_type: "ephemeral"
         });
         return;
@@ -150,26 +149,52 @@ class BirthdayHandler {
       const reactions = this.getReactions();
       console.log(`Generated reactions: ${JSON.stringify(reactions)}`);
 
-      // Determine target channel: ALWAYS #announcements (or SLACK_TARGET_CHANNEL override)
-      const announcementsChannelName = process.env.SLACK_TARGET_CHANNEL || '#announcements';
-      const targetChannel = await this.resolveChannelId(client, announcementsChannelName);
-      if (!targetChannel) {
-        await respond({
-          text: `❌ Error: Could not find the ${announcementsChannelName} channel. Please ensure it exists and the bot has access.`,
-          response_type: "ephemeral"
-        });
-        return;
-      }
-      // Try to ensure the bot is a member of the channel
-      try {
-        await client.conversations.join({ channel: targetChannel });
-      } catch (joinErr) {
-        // Ignore already_in_channel or not_allowed errors; continue to try posting/reactions
-        console.log(`Join attempt for ${announcementsChannelName} (${targetChannel}) result:`, joinErr?.data?.error || 'ok/ignored');
+      // Determine target channel: #announcements for normal mode, user DM for test mode
+      let targetChannel;
+      if (isTestMode) {
+        // Test mode: post to user's DM
+        try {
+          const dmResult = await client.conversations.open({
+            users: command.user_id
+          });
+          if (!dmResult.ok || !dmResult.channel) {
+            await respond({
+              text: `❌ Error: Could not open DM with you. Please try again.`,
+              response_type: "ephemeral"
+            });
+            return;
+          }
+          targetChannel = dmResult.channel.id;
+          console.log(`Test mode: posting to user DM ${targetChannel}`);
+        } catch (error) {
+          console.error('Error opening DM:', error);
+          await respond({
+            text: `❌ Error: Could not open DM. Please try again.`,
+            response_type: "ephemeral"
+          });
+          return;
+        }
+      } else {
+        // Normal mode: always post to #announcements
+        targetChannel = await this.resolveChannelId(client, '#announcements');
+        if (!targetChannel) {
+          await respond({
+            text: `❌ Error: Could not find the #announcements channel. Please ensure it exists and the bot has access.`,
+            response_type: "ephemeral"
+          });
+          return;
+        }
+        // Try to ensure the bot is a member of the channel
+        try {
+          await client.conversations.join({ channel: targetChannel });
+        } catch (joinErr) {
+          // Ignore already_in_channel or not_allowed errors; continue to try posting/reactions
+          console.log(`Join attempt for #announcements (${targetChannel}) result:`, joinErr?.data?.error || 'ok/ignored');
+        }
       }
 
-      // Always post the final message to announcements
-      const finalMessage = message;
+      // Add test mode prefix if in test mode
+      const finalMessage = isTestMode ? `🧪 **TEST MODE** 🧪\n\n${message}` : message;
 
       // Get settings from config
       const settings = this.messages.settings || {};
@@ -198,73 +223,34 @@ class BirthdayHandler {
       // Add reactions to the message
       if (result && result.ts) {
         const messageTs = result.ts;
-        const resultChannel = result.channel;
-        console.log(`Adding ${reactions.length} reactions to message ${messageTs} in channel ${targetChannel}`);
-        console.log(`DEBUG: targetChannel type: ${typeof targetChannel}, value: ${targetChannel}`);
-        console.log(`DEBUG: resultChannel type: ${typeof resultChannel}, value: ${resultChannel}`);
-        console.log(`DEBUG: messageTs type: ${typeof messageTs}, value: ${messageTs}`);
-        console.log(`DEBUG: result object:`, JSON.stringify(result, null, 2));
-        
-        // Use the channel ID from the result object if available, otherwise fall back to targetChannel
-        const reactionChannel = resultChannel || targetChannel;
-        console.log(`DEBUG: Using channel ${reactionChannel} for reactions`);
+        const reactionChannel = result.channel || targetChannel;
+        console.log(`Adding ${reactions.length} reactions to message ${messageTs} in channel ${reactionChannel}`);
         
         // Add reactions with a small delay to avoid rate limiting
         for (let i = 0; i < reactions.length; i++) {
           setTimeout(async () => {
             try {
-              console.log(`Adding reaction: ${reactions[i]}`);
-              console.log(`DEBUG: Using channel ${reactionChannel} and timestamp ${messageTs} for reaction ${reactions[i]}`);
               await client.reactions.add({
                 channel: reactionChannel,
                 timestamp: messageTs,
                 name: reactions[i]
               });
-              console.log(`Successfully added reaction: ${reactions[i]}`);
             } catch (error) {
-              console.error(`Error adding reaction ${reactions[i]}:`, error);
-              // Check if it's a channel not found error
-              if (error.data && error.data.error === 'channel_not_found') {
-                console.error(`Channel ${reactionChannel} not found for reactions. This might be a permissions issue.`);
-                console.error(`DEBUG: Full error data:`, JSON.stringify(error.data, null, 2));
-                console.error(`DEBUG: Tried channel: ${reactionChannel}, original targetChannel: ${targetChannel}, resultChannel: ${resultChannel}`);
-                
-                // Try to join the channel if it's a private channel
-                if (reactionChannel.startsWith('C') || reactionChannel.startsWith('G')) {
-                  try {
-                    console.log(`Attempting to join channel ${reactionChannel}...`);
-                    await client.conversations.join({ channel: reactionChannel });
-                    console.log(`Successfully joined channel ${reactionChannel}`);
-                    
-                    // Retry the reaction after joining
-                    setTimeout(async () => {
-                      try {
-                        await client.reactions.add({
-                          channel: reactionChannel,
-                          timestamp: messageTs,
-                          name: reactions[i]
-                        });
-                        console.log(`Successfully added reaction ${reactions[i]} after joining channel`);
-                      } catch (retryError) {
-                        console.error(`Still failed to add reaction ${reactions[i]} after joining channel:`, retryError);
-                      }
-                    }, 1000);
-                  } catch (joinError) {
-                    console.error(`Failed to join channel ${reactionChannel}:`, joinError);
-                  }
-                }
-              }
+              console.error(`Error adding reaction ${reactions[i]}:`, error.message || error);
             }
           }, i * 500); // 500ms delay between reactions
         }
-      } else {
-        console.log('No message timestamp found, cannot add reactions');
       }
 
-      // Show confirmation message in test mode
+      // Show confirmation message
       if (isTestMode) {
         await respond({
-          text: `✅ Test message posted to this channel! Remove \`--test\` to post to #announcements.`,
+          text: `✅ Test message posted to your DM! Remove \`--test\` to post to #announcements.`,
+          response_type: "ephemeral"
+        });
+      } else {
+        await respond({
+          text: `✅ Birthday message posted to #announcements!`,
           response_type: "ephemeral"
         });
       }

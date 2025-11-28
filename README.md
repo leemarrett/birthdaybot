@@ -1,10 +1,10 @@
-# Slack Birthday Bot 🎉
+# Slack Birthday Boi 🎉
 
 A personalized Slack bot for birthday greetings with customizable messages and reactions.
 
 ## Features
 
-- **Slash Command**: `/birthdaybot @user1, @user2, @user3...`
+- **Slash Command**: `/birthdayboi @user1, @user2, @user3...`
 - **Smart Messaging**: Different templates for 1, 2, or 3+ birthdays
 - **Dual Reaction System**: Always-add favorites + random additional reactions
 - **Editable Configuration**: JSON files for easy customization
@@ -22,7 +22,7 @@ A personalized Slack bot for birthday greetings with customizable messages and r
    - `chat:write`
    - `reactions:write`
    - `commands`
-6. Create a slash command `/birthdaybot`
+6. Create a slash command `/birthdayboi`
 
 ### 2. Environment Setup
 
@@ -63,7 +63,7 @@ Edit message templates for different birthday counts:
 {
   "settings": {
     "postAsUser": false,
-    "botName": "Birthday Bot",
+    "botName": "Birthday Boi",
     "botIcon": ":birthday:"
   },
   "single": [
@@ -100,9 +100,9 @@ Customize your reaction lists:
 ### Slash Command
 
 ```
-/birthdaybot @username1
-/birthdaybot @username1, @username2
-/birthdaybot @username1, @username2, @username3
+/birthdayboi @username1
+/birthdayboi @username1, @username2
+/birthdayboi @username1, @username2, @username3
 ```
 
 ### Test Mode
@@ -110,8 +110,8 @@ Customize your reaction lists:
 Test the bot in a private channel before posting to #announcements:
 
 ```
-/birthdaybot --test @username1
-/birthdaybot -t @username1, @username2
+/birthdayboi --test @username1
+/birthdayboi -t @username1, @username2
 ```
 
 **Test Mode Features:**
@@ -144,15 +144,15 @@ Test the bot in a private channel before posting to #announcements:
 
 ```bash
 # Build the image
-docker build -t slack-birthday-bot .
+docker build -t slack-birthday-boi .
 
 # Run the container
 docker run -d \
-  --name slack-birthday-bot \
+  --name slack-birthday-boi \
   --env-file .env \
   -p 3000:3000 \
   -v $(pwd)/config:/app/config \
-  slack-birthday-bot
+  slack-birthday-boi
 ```
 
 ## Development
@@ -160,7 +160,7 @@ docker run -d \
 ### Project Structure
 
 ```
-birthdaybot/
+birthdayboi/
 ├── src/
 │   ├── bot.js              # Main bot logic
 │   ├── config/
@@ -192,7 +192,7 @@ Configuration files are automatically reloaded when changed (in development mode
 
 Check Docker logs:
 ```bash
-docker logs slack-birthday-bot
+docker logs slack-birthday-boi
 ```
 
 ## License
