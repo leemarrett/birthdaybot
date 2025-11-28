@@ -218,17 +218,15 @@ class BirthdayHandler {
       
       console.log(`[DEBUG] Final targetChannel: ${targetChannel}, isTestMode: ${isTestMode}`);
       
-      // Safety check: Never post to #announcements if in test mode
-      if (isTestMode && targetChannel) {
-        const announcementsId = await this.resolveChannelId(dmClient, '#announcements');
-        if (announcementsId && targetChannel === announcementsId) {
-          console.error(`[DEBUG] ERROR: Test mode detected but targetChannel is #announcements! Aborting.`);
-          await respond({
-            text: `❌ Error: Test mode detected but would post to #announcements. This is a bug. Please report this issue.`,
-            response_type: "ephemeral"
-          });
-          return;
-        }
+      // Safety check: Verify we're not posting to #announcements in test mode
+      // (DM channel IDs start with 'D', public channels start with 'C')
+      if (isTestMode && targetChannel && !targetChannel.startsWith('D')) {
+        console.error(`[DEBUG] ERROR: Test mode detected but targetChannel doesn't look like a DM! Channel: ${targetChannel}`);
+        await respond({
+          text: `❌ Error: Test mode detected but target channel is not a DM. This is a bug. Please report this issue.`,
+          response_type: "ephemeral"
+        });
+        return;
       }
 
       // Add test mode prefix if in test mode
@@ -241,14 +239,19 @@ class BirthdayHandler {
       const botIcon = settings.botIcon || ":birthday:";
 
       // Post to target channel using Web API
+      // In test mode (DMs), always use bot client as DMs require bot permissions
+      // In normal mode, use the configured client (userClient if postAsUser is enabled)
+      const postingClient = isTestMode ? dmClient : client;
+      
       const messageOptions = {
         channel: targetChannel,
         text: finalMessage
       };
 
       // Configure posting behavior
-      if (postAsUser) {
-        // Post as the user (requires user token)
+      // Note: In test mode, we always post as bot (DMs don't support as_user)
+      if (postAsUser && !isTestMode) {
+        // Post as the user (requires user token, only in normal mode)
         messageOptions.as_user = true;
       } else {
         // Post as bot with custom appearance
@@ -256,7 +259,8 @@ class BirthdayHandler {
         messageOptions.icon_emoji = botIcon;
       }
 
-      const result = await client.chat.postMessage(messageOptions);
+      console.log(`[DEBUG] Posting message using ${isTestMode ? 'bot client' : (postAsUser ? 'user client' : 'bot client')} to channel ${targetChannel}`);
+      const result = await postingClient.chat.postMessage(messageOptions);
 
       // Add reactions to the message
       if (result && result.ts) {
@@ -265,10 +269,11 @@ class BirthdayHandler {
         console.log(`Adding ${reactions.length} reactions to message ${messageTs} in channel ${reactionChannel}`);
         
         // Add reactions with a small delay to avoid rate limiting
+        // Use bot client for reactions (always requires bot permissions)
         for (let i = 0; i < reactions.length; i++) {
           setTimeout(async () => {
             try {
-              await client.reactions.add({
+              await dmClient.reactions.add({
                 channel: reactionChannel,
                 timestamp: messageTs,
                 name: reactions[i]
