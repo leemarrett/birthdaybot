@@ -34,7 +34,8 @@ app.command(COMMAND_NAME, async ({ ack, respond, command, client }) => {
   const botClient = client; // Always use bot client for DM/channel operations
   console.log(`[DEBUG] Using ${userClient ? 'userClient' : 'bot client'} for posting, bot client for DM/channel ops`);
   console.log(`[DEBUG] Command received: text="${command.text}", user_id="${command.user_id}"`);
-  await birthdayHandler.handleBirthdayCommand(ack, respond, command, effectiveClient, botClient);
+  // Pass both clients so handler can use bot client for joining channels if needed
+  await birthdayHandler.handleBirthdayCommand(ack, respond, command, effectiveClient, botClient, userClient);
 });
 
 // Help command

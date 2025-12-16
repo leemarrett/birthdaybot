@@ -137,7 +137,8 @@ class BirthdayHandler {
   // Main handler for birthday command
   // client: client to use for posting messages (may be userClient or bot client)
   // botClient: always the bot client (for DM/channel operations that need bot scopes)
-  async handleBirthdayCommand(ack, respond, command, client, botClient = null) {
+  // userClient: the user client if available (for fallback reactions)
+  async handleBirthdayCommand(ack, respond, command, client, botClient = null, userClient = null) {
     // If botClient not provided, use client (backwards compatibility)
     const dmClient = botClient || client;
     try {
@@ -261,25 +262,87 @@ class BirthdayHandler {
 
       console.log(`[DEBUG] Posting message using ${isTestMode ? 'bot client' : (postAsUser ? 'user client' : 'bot client')} to channel ${targetChannel}`);
       const result = await postingClient.chat.postMessage(messageOptions);
+      console.log(`[DEBUG] Posted message using ${userClient && postingClient === userClient ? 'userClient' : 'botClient'}`);
 
-      // Add reactions to the message
+      // Add reactions to the message - use the same client that posted the message
+      // This ensures if userClient was used for posting, it's also used for reactions
+      const reactionClient = postingClient; // Same client used for posting
       if (result && result.ts) {
         const messageTs = result.ts;
-        const reactionChannel = result.channel || targetChannel;
+        const resultChannel = result.channel;
+        const reactionChannel = resultChannel || targetChannel;
         console.log(`Adding ${reactions.length} reactions to message ${messageTs} in channel ${reactionChannel}`);
+        console.log(`[DEBUG] Using ${userClient && reactionClient === userClient ? 'userClient' : 'botClient'} for reactions`);
         
         // Add reactions with a small delay to avoid rate limiting
-        // Use bot client for reactions (always requires bot permissions)
         for (let i = 0; i < reactions.length; i++) {
           setTimeout(async () => {
             try {
-              await dmClient.reactions.add({
+              console.log(`Adding reaction: ${reactions[i]}`);
+              await reactionClient.reactions.add({
                 channel: reactionChannel,
                 timestamp: messageTs,
                 name: reactions[i]
               });
+              console.log(`Successfully added reaction: ${reactions[i]}`);
             } catch (error) {
-              console.error(`Error adding reaction ${reactions[i]}:`, error.message || error);
+              const errorCode = error?.data?.error || error?.error || 'unknown';
+              console.error(`Error adding reaction ${reactions[i]}:`, error);
+              
+              // Handle both channel_not_found and not_in_channel errors
+              if (errorCode === 'channel_not_found' || errorCode === 'not_in_channel') {
+                console.error(`Channel access issue (${errorCode}) for reactions. Attempting to join channel...`);
+                console.error(`DEBUG: Tried channel: ${reactionChannel}, original targetChannel: ${targetChannel}, resultChannel: ${resultChannel}`);
+                
+                // Try to join the channel using botClient if available, otherwise use client
+                const joinClient = botClient || client;
+                if (reactionChannel.startsWith('C') || reactionChannel.startsWith('G')) {
+                  try {
+                    console.log(`Attempting to join channel ${reactionChannel} using ${botClient ? 'botClient' : 'client'}...`);
+                    await joinClient.conversations.join({ channel: reactionChannel });
+                    console.log(`Successfully joined channel ${reactionChannel}`);
+                    
+                    // Retry the reaction after joining (use the same client that posted)
+                    setTimeout(async () => {
+                      try {
+                        await reactionClient.reactions.add({
+                          channel: reactionChannel,
+                          timestamp: messageTs,
+                          name: reactions[i]
+                        });
+                        console.log(`Successfully added reaction ${reactions[i]} after joining channel`);
+                      } catch (retryError) {
+                        const retryErrorCode = retryError?.data?.error || retryError?.error || 'unknown';
+                        console.error(`Still failed to add reaction ${reactions[i]} after joining channel (${retryErrorCode}):`, retryError);
+                      }
+                    }, 1000);
+                  } catch (joinError) {
+                    const joinErrorCode = joinError?.data?.error || joinError?.error || 'unknown';
+                    console.error(`Failed to join channel ${reactionChannel} (${joinErrorCode}):`, joinError);
+                    
+                    // If join failed and we're using userClient, try using userClient for reactions
+                    // (user might be in channel even if bot isn't)
+                    if (userClient && reactionClient !== userClient) {
+                      console.log(`Retrying reaction with userClient since bot join failed...`);
+                      setTimeout(async () => {
+                        try {
+                          await userClient.reactions.add({
+                            channel: reactionChannel,
+                            timestamp: messageTs,
+                            name: reactions[i]
+                          });
+                          console.log(`Successfully added reaction ${reactions[i]} using userClient`);
+                        } catch (userClientError) {
+                          console.error(`Failed to add reaction ${reactions[i]} with userClient:`, userClientError);
+                        }
+                      }, 1000);
+                    }
+                  }
+                }
+              } else {
+                // Log other errors but don't retry
+                console.error(`Unexpected error adding reaction ${reactions[i]}:`, errorCode);
+              }
             }
           }, i * 500); // 500ms delay between reactions
         }
