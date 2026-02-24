@@ -43,6 +43,7 @@
     "It would be prudent to point out birthdays appropriately. Thus: Happy birthday {user}!",
     "Life is like a box of birthday shouts. One such birthday shout out should go to our very own {user}!",
     "Happy birthday to the one like {user}!",
+    "Oh cool, it's {user}'s birthday! Happiest of days, {user}!",
     "What's the weather doing? Who cares, it's {user}'s birthday! Happy birthday {user}!",
     "HAPPY BIRTHDAY {user}!!!!1!!one",
     "RIGHTO LOOK ITS {user}'s BIRTHDAY. WISH THEM WELL.",
@@ -82,7 +83,6 @@
     "Joyous frovolitudes, {user}! 🎉",
     "Spiffing delinquitudes, {user}! 🎉",
     "Gracious lamentitudes, dear {user}! 🎉",
-    "Funniful pantilimes, {user}! 🎉",
     "Gozliminous anguitudes, {user}! 🎉",
     "Frabjous tidings, {user}! ⚔️",
     "Calloo, callay! It's {user}'s birthday today! Frabjous day, {user}!",
@@ -108,7 +108,7 @@
     "ITS A TWOFER! Wishing the happiest of birthdays to {user1} and {user2}! 🥳🎊",
     "Two people, one day! Happy birthday {user1} and {user2}! 🎉🎂",
     "Double J and Twice the Birthday wishes to {user1} and {user2}!",
-    "Two strong hearts, reaching out together like the honey to the b-irthday wishes to {user1} and {user2}! 🐝"
+    "Two strong hearts, reaching out together like the honey to the b-irthday wishes to TWO Aucklandians, {user1} and {user2}! 🐝"
   ],
 
   "multiple": [
