@@ -97,6 +97,11 @@
     "Oily ovolitudes, {user}! 🛢️",
     "Fa la la la la, la la la birthday. It might not be Christmas yet but it's always a celebration when it's {user}'s birthday! 🍾",
     "Crikey! It's {user}'s birthday! Happy birthday {user} ya flamin' galah! 🍾",
+    "I wish to extend the very warmest, most delicious, most enveloping birthday wishes you could possibly imagine to {user}, who has chosen to grace us with their birthday on this very auspicious day. Happy birthday!",
+    "Finally, the moment has arrived. It's {user}'s birthday! Have a happy one, {user}!",
+    "It's a beautiful day, not because of the weather, but because it's {user}'s birthday! Join me in wishing them a happy one!",
+    "We don't wish {user} a happy birthday because it's easy; we wish {user a happy birthday because it's just a jolly nice thing to do of a day. Happy day, {user}!",
+    "I don't know what would bring me more joy than to extend all my birthday related fronds in the direction of you, {user}. Happy birthday!",
     "Happiest and jubliantiest of birthdays to you, dear {user}! 🥰"
   ],
 
@@ -106,6 +111,8 @@
     "Happy biiiiirthhhhday to the amazing {user1} and {user2}!!! 🎉",
     "Double frissons and twice the shiver me timbers, it's {user1} and {user2}'s birthday today! 🎂🎈",
     "ITS A TWOFER! Wishing the happiest of birthdays to {user1} and {user2}! 🥳🎊",
+    "Wow, two birthdays, one day! Imagine that. No need, it's happening! Happy birthday {user1} and {user2}!",
+    "It's a great day today because we celebrate not one, but two amazing birthdays. Happy birthday, {user1} and {user2}!!",
     "Two people, one day! Happy birthday {user1} and {user2}! 🎉🎂",
     "Double J and Twice the Birthday wishes to {user1} and {user2}!",
     "Two strong hearts, reaching out together like the honey to the b-irthday wishes to TWO Aucklandians, {user1} and {user2}! 🐝"
@@ -113,6 +120,7 @@
 
   "multiple": [
     "Three! Happy birthday to 1. {user1}, 2. {user2}, and 3. {user3}! 🎉",
+    "Oh CRIKEY, THREE??? Hard to believe. Happy birthday to {user1}, {user2} AND {user3}!!!",
     "C-C-C-COMBO BREAKER! Happy birthday {user1}, {user2}, and {user3}! Have an amazing day 🎉🎂",
     "Billions of Blistering Birthday Barnacles for {user1}, {user2}, and {user3}! 🎂🎈🎊",
     "It's just incredible that three people can have birthdays AT THE SAME TIME. Happy birthday {user1}, {user2}, and {user3}! 🥳🎉🎂",
