@@ -22,6 +22,7 @@ A personalized Slack bot for birthday greetings with customizable messages and r
    - `chat:write`
    - `reactions:write`
    - `commands`
+   - `users:read` (needed to map `@handle` in slash commands to the correct member)
 6. Create a slash command `/birthdayboi`
 
 ### 2. Environment Setup

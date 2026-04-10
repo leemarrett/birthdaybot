@@ -36,6 +36,7 @@ This guide will walk you through creating and configuring your Slack app for the
    - `chat:write` - Post messages
    - `reactions:write` - Add reactions
    - `commands` - Use slash commands
+   - `users:read` - Look up members when slash command text is `@handle` (Slack often does not send user IDs in command text)
    - `channels:read` - Read channel information
    - `groups:read` - Read private channel information
    - `im:read` - Read direct messages

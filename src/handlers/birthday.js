@@ -5,24 +5,106 @@ class BirthdayHandler {
     this.config = new ConfigManager();
     this.messages = this.config.loadMessages();
     this.reactions = this.config.loadReactions();
+    this._membersCache = null;
   }
 
-  // Parse usernames from slash command text
-  parseUsernames(text) {
+  /**
+   * Slack slash commands often send plain @handle (no user ID). Mentions in messages use
+   * <@USERID> or <@USERID|label>. A naive /@(\w+)/g match can pick the wrong @ (e.g. emails,
+   * labels) or treat a substring as the whole handle — resolve handles against the workspace.
+   */
+  static SLACK_USER_MENTION_RE =
+    /<@([UW][A-Z0-9]+)(?:\|[^>]+)?>|(?<![a-zA-Z0-9.])@([a-z0-9._-]+)/gi;
+
+  async getAllMembers(client) {
+    const ttlMs = 5 * 60 * 1000;
+    if (this._membersCache && Date.now() < this._membersCache.expiresAt) {
+      return this._membersCache.members;
+    }
+    const members = [];
+    let cursor;
+    do {
+      const r = await client.users.list({ limit: 200, cursor });
+      if (!r.ok) {
+        throw new Error(r.error || 'users.list failed');
+      }
+      members.push(...(r.members || []));
+      cursor = r.response_metadata?.next_cursor;
+    } while (cursor);
+    this._membersCache = { members, expiresAt: Date.now() + ttlMs };
+    return members;
+  }
+
+  matchMemberByHandle(members, handle) {
+    const h = handle.toLowerCase();
+    const active = members.filter((m) => !m.deleted && !m.is_bot);
+    const byName = active.filter((m) => m.name && m.name.toLowerCase() === h);
+    if (byName.length === 1) return byName[0].id;
+    const byDn = active.filter(
+      (m) => m.profile?.display_name && m.profile.display_name.toLowerCase() === h
+    );
+    if (byDn.length === 1) return byDn[0].id;
+    const byRn = active.filter(
+      (m) => m.profile?.real_name && m.profile.real_name.toLowerCase() === h
+    );
+    if (byRn.length === 1) return byRn[0].id;
+    return null;
+  }
+
+  /**
+   * Returns ordered user IDs and any @handles that could not be resolved.
+   */
+  async resolveMentionedUserIds(botClient, text) {
     if (!text || text.trim() === '') {
-      return [];
+      return { userIds: [], unresolvedHandles: [] };
     }
 
-    // Extract usernames from text like "@user1, @user2, @user3"
-    const usernameRegex = /@(\w+)/g;
-    const matches = text.match(usernameRegex);
-    
-    if (!matches) {
-      return [];
+    const re = new RegExp(BirthdayHandler.SLACK_USER_MENTION_RE.source, 'gi');
+    const tokens = [];
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m[1]) {
+        tokens.push({ type: 'id', value: m[1] });
+      } else if (m[2]) {
+        const raw = m[2];
+        const low = raw.toLowerCase();
+        if (['here', 'channel', 'everyone'].includes(low)) continue;
+        tokens.push({ type: 'handle', value: raw });
+      }
     }
 
-    // Remove @ symbol and return clean usernames
-    return matches.map(match => match.substring(1));
+    if (tokens.length === 0) {
+      return { userIds: [], unresolvedHandles: [] };
+    }
+
+    const needsDirectory = tokens.some((t) => t.type === 'handle');
+    let members = null;
+    if (needsDirectory) {
+      members = await this.getAllMembers(botClient);
+    }
+
+    const userIds = [];
+    const seen = new Set();
+    const unresolvedHandles = [];
+
+    for (const t of tokens) {
+      if (t.type === 'id') {
+        if (!seen.has(t.value)) {
+          seen.add(t.value);
+          userIds.push(t.value);
+        }
+        continue;
+      }
+      const uid = this.matchMemberByHandle(members, t.value);
+      if (uid && !seen.has(uid)) {
+        seen.add(uid);
+        userIds.push(uid);
+      } else if (!uid) {
+        unresolvedHandles.push(t.value);
+      }
+    }
+
+    return { userIds, unresolvedHandles };
   }
 
   // Get appropriate message template based on user count
@@ -49,13 +131,13 @@ class BirthdayHandler {
     return templates[randomIndex];
   }
 
-  // Format message with user mentions
-  formatMessage(template, usernames) {
+  // Format message with user mentions (userIds are Slack member IDs, e.g. U…)
+  formatMessage(template, userIds) {
     let message = template;
     
     // Replace placeholders with actual user mentions
-    usernames.forEach((username, index) => {
-      const mention = `<@${username}>`;
+    userIds.forEach((userId, index) => {
+      const mention = `<@${userId}>`;
       
       // Handle both {user} and {user1} for the first user
       if (index === 0) {
@@ -87,24 +169,23 @@ class BirthdayHandler {
     return reactions;
   }
 
-  // Parse command text for test mode and usernames
-  parseCommand(text) {
-    // Log the raw command text for debugging
+  // Parse command text for test mode; resolve mentions to user IDs (async)
+  async parseCommand(botClient, text) {
     console.log(`[DEBUG] Raw command text: "${text}"`);
     
     if (!text) {
       console.log(`[DEBUG] Command text is empty or undefined`);
-      return { isTestMode: false, usernames: [] };
+      return { isTestMode: false, userIds: [], unresolvedHandles: [] };
     }
     
     const lowerText = text.toLowerCase();
     const isTestMode = lowerText.includes('--test') || lowerText.includes('-t') || lowerText.trim().startsWith('--test') || lowerText.trim().startsWith('-t');
     const cleanText = text.replace(/--test|-t/gi, '').trim();
-    const usernames = this.parseUsernames(cleanText);
+    const { userIds, unresolvedHandles } = await this.resolveMentionedUserIds(botClient, cleanText);
     
-    console.log(`[DEBUG] isTestMode: ${isTestMode}, usernames: ${JSON.stringify(usernames)}`);
+    console.log(`[DEBUG] isTestMode: ${isTestMode}, userIds: ${JSON.stringify(userIds)}, unresolvedHandles: ${JSON.stringify(unresolvedHandles)}`);
     
-    return { isTestMode, usernames };
+    return { isTestMode, userIds, unresolvedHandles };
   }
 
   // Resolve channel name to channel ID
@@ -146,10 +227,18 @@ class BirthdayHandler {
       await ack();
       
 
-      // Parse command for test mode and usernames
-      const { isTestMode, usernames } = this.parseCommand(command.text);
+      // Parse command for test mode and resolve @mentions to Slack user IDs
+      const { isTestMode, userIds, unresolvedHandles } = await this.parseCommand(dmClient, command.text);
       
-      if (usernames.length === 0) {
+      if (unresolvedHandles.length > 0) {
+        await respond({
+          text: `❌ Could not match these to workspace members (try the @ mention picker, or use each person's Slack *handle* / display name exactly): ${unresolvedHandles.map((h) => `\`@${h}\``).join(', ')}`,
+          response_type: "ephemeral"
+        });
+        return;
+      }
+
+      if (userIds.length === 0) {
         await respond({
           text: `🚀 Please provide at least one username to celebrate! Usage: \`/birthdayboi @username1, @username2\`\n\nAdd \`--test\` or \`-t\` to test in your DM instead of posting to #announcements.`,
           response_type: "ephemeral"
@@ -158,8 +247,8 @@ class BirthdayHandler {
       }
 
       // Get message template and format it
-      const template = this.getMessageTemplate(usernames.length);
-      const message = this.formatMessage(template, usernames);
+      const template = this.getMessageTemplate(userIds.length);
+      const message = this.formatMessage(template, userIds);
       
       // Get reactions to add
       const reactions = this.getReactions();
@@ -375,6 +464,7 @@ class BirthdayHandler {
     this.config.reload();
     this.messages = this.config.messages;
     this.reactions = this.config.reactions;
+    this._membersCache = null;
   }
 }
 
