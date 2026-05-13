@@ -91,9 +91,9 @@
     "Cheerful cheeritudes, {user}! 🌊",
     "Delightful delilitudes, {user}! ❤️",
     "Gleeful gleelitudes, {user}! ✅",
-    "Hapless haplitudes, {user}! 🫶",
+    "Hapless haplitudes, {user}! Take it super easy today 🫶",
     "Jubilant jubilitudes, {user}! 🥰",
-    "Bubbly celebritudes, {user}! 🍾",
+    "Bubbly celebritudes, {user}! We love you! 🍾",
     "Oily ovolitudes, {user}! 🛢️",
     "Fa la la la la, la la la birthday. It might not be Christmas yet but it's always a celebration when it's {user}'s birthday! 🍾",
     "Crikey! It's {user}'s birthday! Happy birthday {user} ya flamin' galah! 🍾",
@@ -102,7 +102,10 @@
     "It's a beautiful day, not because of the weather, but because it's {user}'s birthday! Join me in wishing them a happy one!",
     "We don't wish {user} a happy birthday because it's easy; we wish {user a happy birthday because it's just a jolly nice thing to do of a day. Happy day, {user}!",
     "I don't know what would bring me more joy than to extend all my birthday related fronds in the direction of you, {user}. Happy birthday!",
-    "Happiest and jubliantiest of birthdays to you, dear {user}! 🥰"
+    "Happiest and jubliantiest of birthdays to you, dear {user}! 🥰",
+    "It's the end of the world as you know it, {user} - new year, new you! Happy birthday!! 🐤",
+    "Happiest birthday to you, {user}! You truly are a lineman for the county! And you sure do line the main road! 💕👷‍♀️",
+    "Wishing you the most amazing birthday possible, {user}! "
   ],
 
   "double": [
@@ -115,7 +118,9 @@
     "It's a great day today because we celebrate not one, but two amazing birthdays. Happy birthday, {user1} and {user2}!!",
     "Two people, one day! Happy birthday {user1} and {user2}! 🎉🎂",
     "Double J and Twice the Birthday wishes to {user1} and {user2}!",
-    "Two strong hearts, reaching out together like the honey to the b-irthday wishes to TWO Aucklandians, {user1} and {user2}! 🐝"
+    "Two strong hearts, reaching out together like the honey to the b-irthday wishes to TWO Aucklandians, {user1} and {user2}! 🐝",
+    "Great scott! Two? In one day? Happy birthday {user1} and {user2}! ⚛️ 💕",
+    "Happiest of birthdays to the pair of you {user1} and {user2}!! 💕👭"
   ],
 
   "multiple": [
@@ -125,6 +130,8 @@
     "Billions of Blistering Birthday Barnacles for {user1}, {user2}, and {user3}! 🎂🎈🎊",
     "It's just incredible that three people can have birthdays AT THE SAME TIME. Happy birthday {user1}, {user2}, and {user3}! 🥳🎉🎂",
     "Three amazing people, one pretty neat day! Happy birthday {user1}, {user2}, and {user3}! 🎈🎊🎉",
-    "Hey {user1}, {user2}, and {user3}! You thought one birthday was good, get a load of three! Here, have a birthday wish! ❤️"
+    "Hey {user1}, {user2}, and {user3}! You thought one birthday was good, get a load of three! Here, have a birthday wish! ❤️",
+    "Goodness me. Three? In one day? Inconcievable! Happy birthday to all three of you {user1}, {user2} and {user3}! ⚔️💗",
+    "Happy, happy, HAPPY birthday to the wonderful {user1}, {user2} and {user3}! 💓🫰😻"
   ]
 }
